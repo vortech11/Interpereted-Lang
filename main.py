@@ -1,7 +1,9 @@
 import sys
 from pathlib import Path as Path
 
-functions = ["print"]
+functions = ["print", "add"]
+
+delimeters = ["(", ")", "[", "]", "{", "}", ".", "+", "-", "*", "/", ","]
 
 def breakupListByChar(word, lookchar):
     output = [""]
@@ -23,22 +25,46 @@ def breakupListByCharWrapper(list, char):
         splitTokens.extend(breakupListByChar(token, char))
     return splitTokens
     
+def findClosingParenth(inputList, openDelimeter, closeDelimeter):
+    indent = 1
+    for index, token in enumerate(inputList):
+        if token == openDelimeter:
+            indent += 1
+        elif token == closeDelimeter:
+            indent -= 1
+        
+        if indent == 0:
+            return index
+
+def convert_tokens_to_objects(tokens):
+    
+    syntaxTree = []
+    
+    index = 0
+    
+    while index < len(tokens):
+        if tokens[index] in functions and tokens[index + 1] == "(":
+            syntaxTree.append({
+                "dataType": "func",
+                "params": convert_tokens_to_objects(tokens[index + 2: index + 2 + findClosingParenth(tokens[index + 2::], "(", ")")])
+            })
+
+        index += 1
+
+    return syntaxTree
+    
+ 
 
 def parse_line(line:str):
     tokens = line.split(" ")
     tokens = [x for x in tokens if not x == '']
+
+    for delimeter in delimeters:
+        tokens = breakupListByCharWrapper(tokens, delimeter)
+
+    print(tokens)
     
-    tokens = breakupListByCharWrapper(tokens, "(")
-    tokens = breakupListByCharWrapper(tokens, ")")
-    
-    syntaxTree = []
-    
-    for index, token in enumerate(tokens):
-        if token in functions and tokens[index + 1] == "(":
-            syntaxTree.append({
-                "dataType": "func",
-                "params": tokens[index + 2:tokens.index(")", index + 1)]
-            })
+    syntaxTree = convert_tokens_to_objects(tokens)
     
     return syntaxTree
 
