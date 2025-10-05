@@ -3,7 +3,7 @@ from pathlib import Path as Path
 
 functions = ["print", "add"]
 
-delimeters = ["(", ")", "[", "]", "{", "}", ".", "+", "-", "*", "/", ","]
+delimeters = ["(", ")", "[", "]", "{", "}", ".", "+", "-", "*", "/", ",", ";"]
 
 def breakupListByChar(word, lookchar):
     output = [""]
@@ -27,11 +27,14 @@ def breakupListByCharWrapper(list, char):
     
 def findClosingParenth(inputList, openDelimeter, closeDelimeter):
     indent = 1
+    print(inputList)
     for index, token in enumerate(inputList):
         if token == openDelimeter:
             indent += 1
         elif token == closeDelimeter:
             indent -= 1
+
+        print(indent, token)
         
         if indent == 0:
             return index
@@ -44,10 +47,30 @@ def convert_tokens_to_objects(tokens):
     
     while index < len(tokens):
         if tokens[index] in functions and tokens[index + 1] == "(":
+            print(tokens)
+            index += 2
+            funcEnd = index + findClosingParenth(tokens[index::], "(", ")")
+            #print(tokens[index:funcEnd])
+            inputStartsAndEnds = [index + charIndex for charIndex, char in enumerate(tokens[index:funcEnd]) if char == ","]
+            print(inputStartsAndEnds)
             syntaxTree.append({
                 "dataType": "func",
-                "params": convert_tokens_to_objects(tokens[index + 2: index + 2 + findClosingParenth(tokens[index + 2::], "(", ")")])
+                "params": []
             })
+            
+            for inputStart in inputStartsAndEnds:
+                syntaxTree[-1]["params"].append(convert_tokens_to_objects(tokens[index:inputStart]))
+                index = inputStart + 1
+            
+            syntaxTree[-1]["params"].append(convert_tokens_to_objects(tokens[index:funcEnd]))
+
+            index = funcEnd
+
+        else:
+            syntaxTree.append({
+                "dataType": "string",
+                "value": tokens[index]
+            })            
 
         index += 1
 
@@ -62,7 +85,7 @@ def parse_line(line:str):
     for delimeter in delimeters:
         tokens = breakupListByCharWrapper(tokens, delimeter)
 
-    print(tokens)
+    #print(tokens)
     
     syntaxTree = convert_tokens_to_objects(tokens)
     
