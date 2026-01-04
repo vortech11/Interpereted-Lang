@@ -1,4 +1,6 @@
 from enum import Enum, auto
+import logging
+logger = logging.getLogger(__name__)
 
 class TokenType(Enum):
     LEFT_PAREN = auto()
@@ -109,7 +111,8 @@ class Scanner:
         while not self.getNextChar() in ['"', "\0"]:
             self.advance()
         if self.getNextChar() == "\0":
-            print(f"{self.line} | Error: Unterminated String.")
+            logger.error(f"{self.line} | Error: Unterminated String.")
+            exit()
         
         self.addToken(TokenType.STRING, self.source[self.start:self.current+1])
         self.advance()
@@ -191,7 +194,8 @@ class Scanner:
                 elif char.isalpha():
                     self.identifier()
                 else:
-                    print(f"{self.line} | Error: Unexpected character {char}")
+                    logger.error(f"{self.line} | Error: Unexpected character {char}")
+                    exit()
         
         self.advance()
 

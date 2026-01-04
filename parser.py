@@ -1,4 +1,6 @@
 from langGramar import *
+import logging
+logger = logging.getLogger(__name__)
 
 class Parser:
     def __init__(self, tokens: list[Token]):
@@ -23,7 +25,7 @@ class Parser:
             lexeme = "at end"
         else:
             lexeme = f"at '{token.lexeme}'"
-        print(f"{token.line} {lexeme} {message}")
+        logger.error(f"{token.line} {lexeme} {message}")
     
     def consume(self, type: TokenType, message):
         if self.getNextToken().type == type:
@@ -31,6 +33,7 @@ class Parser:
             return self.getToken()
         
         self.error(self.getNextToken(), message)
+        return Token(TokenType.NIL, "", None, 0)
     
     def expression(self):
         return self.equality()
@@ -104,6 +107,8 @@ class Parser:
                 self.consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.")
                 return Grouping(expr)
             
+            case TokenType.IDENTIFIER: return Variable(self.getToken())
+            
             case _: 
                 self.error(self.getToken(), "Expect expression")
                 return Expr()
@@ -125,10 +130,29 @@ class Parser:
 
         return self.expressionStatement()
     
+    def varDeclaration(self):
+        name: Token = self.consume(TokenType.IDENTIFIER, "Expect variable name.")
+        
+        initializer: Expr | None = None
+        if self.getNextToken().type in [TokenType.EQUAL]:
+            self.advance()
+            self.advance()
+            initializer = self.expression()
+        
+        self.consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.")
+        return Var(name, initializer)
+    
+    def declaration(self):
+        if self.getToken().type in [TokenType.VAR]:
+            return self.varDeclaration()
+        
+        else:
+            return self.statement()
+    
     def parse(self):
         tokenList = []
         while not self.isAtEnd():
-            tokenList.append(self.statement())
+            tokenList.append(self.declaration())
             self.advance()
         return tokenList
 

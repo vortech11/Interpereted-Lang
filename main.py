@@ -1,11 +1,20 @@
 import sys
 from pathlib import Path as Path
+import logging
 
 from scanner import Scanner
 from parser import Parser
+from interpreter import Interpreter
 from langGramar import printAST
 
+logger = logging.getLogger(__name__)
+
+
 def parse_file(filePath):
+    loggingLevel = logging.WARNING
+    logging.basicConfig(level=loggingLevel)
+    logger.info('Started')
+    
     filePath = Path(filePath)
     with open(filePath, "r") as file:
         fileData = ""
@@ -15,16 +24,19 @@ def parse_file(filePath):
     
     scanner = Scanner(fileData)
     tokens = scanner.scanTokens()
+    
     parser = Parser(tokens)
     statementTree = parser.parse()
     
     for statement in statementTree:
-        statement.eval()
+        logger.debug(statement)
     
-    for statement in statementTree:
-        printAST(statement)
+    interpreter = Interpreter(statementTree)
+    interpreter.run()
+        
+    logger.info('Finished')
 
-if __name__ == "__main__":
+def main():
     running = True
     while running:
         if len(sys.argv[1:]) > 0:
@@ -37,3 +49,6 @@ if __name__ == "__main__":
                 running = False
             else:
                 print(user_input)
+
+if __name__ == "__main__":
+    main()

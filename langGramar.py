@@ -1,10 +1,11 @@
 from scanner import Token, TokenType
+from environment import Environment
 
 class Grammar:
     def getPrint(self) -> str:
         return f"()"
     
-    def eval(self):
+    def eval(self, environment: Environment):
         return
 
 class Expr(Grammar):
@@ -16,9 +17,9 @@ class Binary(Expr):
         self.operator: Token = operator
         self.right: Expr = right
         
-    def eval(self):
-        left = self.left.eval()
-        right = self.right.eval()
+    def eval(self, environment: Environment):
+        left = self.left.eval(environment)
+        right = self.right.eval(environment)
         if left == None or right == None:
             return None
         match self.operator.type:
@@ -43,8 +44,8 @@ class Grouping(Expr):
     def __init__(self, expression: Expr):
         self.expression: Expr = expression
         
-    def eval(self):
-        return self.expression.eval()
+    def eval(self, environment: Environment):
+        return self.expression.eval(environment)
     
     def getPrint(self) -> str:
         return f"group {self.expression.getPrint()}"
@@ -53,7 +54,7 @@ class Literal(Expr):
     def __init__(self, value):
         self.value = value
         
-    def eval(self):
+    def eval(self, environment: Environment):
         return self.value
         
     def getPrint(self) -> str:
@@ -68,8 +69,8 @@ class Unary(Expr):
         self.operator: Token = operator
         self.right: Expr = right
         
-    def eval(self): # type: ignore
-        value = self.right.eval()
+    def eval(self, environment: Environment): # type: ignore
+        value = self.right.eval(environment)
         match self.operator.type:
             case TokenType.BANG: return not value
             case TokenType.MINUS: 
@@ -90,8 +91,8 @@ class Variable(Expr):
     def getPrint(self):
         return f"{self.name}"
     
-    def eval(self): # type: ignore
-        return (self.name.lexeme)
+    def eval(self, environment: Environment):
+        return environment.get(self.name.lexeme)
 
 class Stmt(Grammar):
     ...
@@ -103,8 +104,8 @@ class Expression(Stmt):
     def getPrint(self) -> str:
         return f"{self.expression.getPrint()}"
     
-    def eval(self):
-        self.expression.eval()
+    def eval(self, environment: Environment):
+        self.expression.eval(environment)
         
 class Print(Stmt):
     def __init__(self, expression: Expr):
@@ -113,16 +114,27 @@ class Print(Stmt):
     def getPrint(self) -> str:
         return f"print ({self.expression.getPrint()})"
     
-    def eval(self):
-        print(self.expression.eval())
+    def eval(self, environment: Environment):
+        print(self.expression.eval(environment))
     
 class Var(Stmt):
-    def __init__(self, name: Token, initializer: Expr) -> None:
-        self.name = name
-        self.initializer = initializer
+    def __init__(self, name: Token, initializer: Expr | None) -> None:
+        self.name: Token = name
+        self.initializer: Expr | None = initializer
         
     def getPrint(self) -> str:
-        return f"{self.name} {self.initializer.getPrint()}"
+        if self.initializer == None:
+            value = None
+        else:
+            value = self.initializer.getPrint()
+        return f"{self.name} {value}"
+    
+    def eval(self, environment: Environment):
+        if self.initializer is None:
+            value = None
+        else:
+            value = self.initializer.eval(environment)
+        environment.define(self.name.lexeme, value)
 
 def printAST(grammar: Grammar):
     print(f"{grammar.getPrint()}")
