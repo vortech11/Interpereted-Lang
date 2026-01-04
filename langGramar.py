@@ -94,53 +94,35 @@ class Variable(Expr):
         return (self.name.lexeme)
 
 class Stmt(Grammar):
-    def __init__(self, previous: Grammar | None, next: Grammar | None) -> None:
-        self.next: Grammar | None = next
-        self.previous: Grammar | None = previous
+    ...
     
 class Expression(Stmt):
-    def __init__(self, expression: Expr, previous: Grammar | None, next: Grammar | None = None):
-        super().__init__(previous, next)
+    def __init__(self, expression: Expr):
         self.expression: Expr = expression
         
     def getPrint(self) -> str:
-        output = f"{self.expression.getPrint()}\n"
-        if self.next is not None:
-            output += f"{self.next.getPrint()}"
-        return output
+        return f"{self.expression.getPrint()}"
     
     def eval(self):
         self.expression.eval()
-        if self.next is not None:
-            self.next.eval()
         
 class Print(Stmt):
-    def __init__(self, expression: Expr, previous: Grammar | None, next: Grammar | None = None):
-        super().__init__(previous, next)
+    def __init__(self, expression: Expr):
         self.expression: Expr = expression
 
     def getPrint(self) -> str:
-        output = f"print ({self.expression.getPrint()})"
-        if self.next is not None:
-            output += f"\n{self.next.getPrint()}"
-        return output
+        return f"print ({self.expression.getPrint()})"
     
     def eval(self):
         print(self.expression.eval())
-        if self.next is not None:
-            self.next.eval()
     
 class Var(Stmt):
-    def __init__(self, name: Token, initializer: Expr, previous: Grammar | None, next: Grammar | None = None) -> None:
-        super().__init__(previous, next)
+    def __init__(self, name: Token, initializer: Expr) -> None:
         self.name = name
         self.initializer = initializer
         
     def getPrint(self) -> str:
-        output = f"{self.name} {self.initializer.getPrint()}"
-        if self.next is not None:
-            output += f"\n{self.next.getPrint()}"
-        return output
+        return f"{self.name} {self.initializer.getPrint()}"
 
 def printAST(grammar: Grammar):
     print(f"{grammar.getPrint()}")

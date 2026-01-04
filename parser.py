@@ -2,8 +2,6 @@ from langGramar import *
 
 class Parser:
     def __init__(self, tokens: list[Token]):
-        self.root: Stmt | None = None
-        self.previous: Stmt | None = None
         self.current: int = 0
         self.tokens: list[Token] = tokens
         
@@ -113,35 +111,25 @@ class Parser:
     def printStatement(self):
         value: Expr = self.expression()
         self.consume(TokenType.SEMICOLON, "Expect ';' after value.")
-        return Print(value, self.previous)
+        return Print(value)
     
     def expressionStatement(self):
         expr: Expr = self.expression()
         self.consume(TokenType.SEMICOLON, "Expect ';' after value.")
-        return Expression(expr, self.previous)
-    
-    def addStatement(self, statementCreationFunc):
-        newNode = statementCreationFunc()
-        if self.root == None:
-            self.root = newNode
-        else:
-            if self.previous == None:
-                self.previous = self.root
-            self.previous.next = newNode
-            self.previous = newNode
+        return Expression(expr)
     
     def statement(self):
         if self.getToken().type == TokenType.PRINT:
             self.advance()
-            self.addStatement(self.printStatement)
-            return
-        self.addStatement(self.expressionStatement)
-        return
+            return self.printStatement()
+
+        return self.expressionStatement()
     
     def parse(self):
+        tokenList = []
         while not self.isAtEnd():
-            self.statement()
+            tokenList.append(self.statement())
             self.advance()
-        return self.root
+        return tokenList
 
         

@@ -17,9 +17,12 @@ def parse_file(filePath):
     tokens = scanner.scanTokens()
     parser = Parser(tokens)
     statementTree = parser.parse()
-    if statementTree is not None:
-        printAST(statementTree)
-        statementTree.eval()
+    
+    for statement in statementTree:
+        statement.eval()
+    
+    for statement in statementTree:
+        printAST(statement)
 
 if __name__ == "__main__":
     running = True
