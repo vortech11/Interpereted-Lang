@@ -1,95 +1,9 @@
 import sys
 from pathlib import Path as Path
 
-functions = ["print", "add"]
-
-delimeters = ["(", ")", "[", "]", "{", "}", ".", "+", "-", "*", "/", ",", ";"]
-
-def breakupListByChar(word, lookchar):
-    output = [""]
-    for char in word:
-        if char == lookchar:
-            output.append(lookchar)
-            output.append("")
-        else:
-            output[-1] += char
-    
-    if output[-1] == "":
-        output = output[:-1]
-    
-    return output
-
-def breakupListByCharWrapper(list, char):
-    splitTokens = []
-    for token in list:
-        splitTokens.extend(breakupListByChar(token, char))
-    return splitTokens
-    
-def findClosingParenth(inputList, openDelimeter, closeDelimeter):
-    indent = 1
-    print(inputList)
-    for index, token in enumerate(inputList):
-        if token == openDelimeter:
-            indent += 1
-        elif token == closeDelimeter:
-            indent -= 1
-
-        print(indent, token)
-        
-        if indent == 0:
-            return index
-
-def convert_tokens_to_objects(tokens):
-    
-    syntaxTree = []
-    
-    index = 0
-    
-    while index < len(tokens):
-        if tokens[index] in functions and tokens[index + 1] == "(":
-            print(tokens)
-            index += 2
-            funcEnd = index + findClosingParenth(tokens[index::], "(", ")")
-            #print(tokens[index:funcEnd])
-            inputStartsAndEnds = [index + charIndex for charIndex, char in enumerate(tokens[index:funcEnd]) if char == ","]
-            print(inputStartsAndEnds)
-            syntaxTree.append({
-                "dataType": "func",
-                "params": []
-            })
-            
-            for inputStart in inputStartsAndEnds:
-                syntaxTree[-1]["params"].append(convert_tokens_to_objects(tokens[index:inputStart]))
-                index = inputStart + 1
-            
-            syntaxTree[-1]["params"].append(convert_tokens_to_objects(tokens[index:funcEnd]))
-
-            index = funcEnd
-
-        else:
-            syntaxTree.append({
-                "dataType": "string",
-                "value": tokens[index]
-            })            
-
-        index += 1
-
-    return syntaxTree
-    
- 
-
-def parse_line(line:str):
-    tokens = line.split(" ")
-    tokens = [x for x in tokens if not x == '']
-
-    for delimeter in delimeters:
-        tokens = breakupListByCharWrapper(tokens, delimeter)
-
-    #print(tokens)
-    
-    syntaxTree = convert_tokens_to_objects(tokens)
-    
-    return syntaxTree
+from scanner import Scanner
+from parser import Parser
+from langGramar import printAST
 
 def parse_file(filePath):
     filePath = Path(filePath)
@@ -97,12 +11,15 @@ def parse_file(filePath):
         fileData = ""
         for line in file:
             fileData += line
-            
-    lineData = "".join([x for x in fileData if not x == "\n"])
+    #print(fileData)
     
-    lineData = parse_line(lineData)
-            
-    print(lineData)
+    scanner = Scanner(fileData)
+    tokens = scanner.scanTokens()
+    parser = Parser(tokens)
+    statementTree = parser.parse()
+    if statementTree is not None:
+        printAST(statementTree)
+        statementTree.eval()
 
 if __name__ == "__main__":
     running = True
@@ -116,6 +33,4 @@ if __name__ == "__main__":
             if user_input == "exit":
                 running = False
             else:
-                print(parse_line(user_input))
-
-
+                print(user_input)

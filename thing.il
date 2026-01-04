@@ -1,1 +1,3 @@
-print(add(5, 3))
+print "one";
+print true;
+print 2 + 1;
