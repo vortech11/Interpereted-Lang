@@ -94,12 +94,13 @@ class Variable(Expr):
         return (self.name.lexeme)
 
 class Stmt(Grammar):
-    def __init__(self, next: Grammar | None) -> None:
+    def __init__(self, previous: Grammar | None, next: Grammar | None) -> None:
         self.next: Grammar | None = next
+        self.previous: Grammar | None = previous
     
 class Expression(Stmt):
-    def __init__(self, expression: Expr, next: Grammar | None = None):
-        super().__init__(next)
+    def __init__(self, expression: Expr, previous: Grammar | None, next: Grammar | None = None):
+        super().__init__(previous, next)
         self.expression: Expr = expression
         
     def getPrint(self) -> str:
@@ -114,8 +115,8 @@ class Expression(Stmt):
             self.next.eval()
         
 class Print(Stmt):
-    def __init__(self, expression: Expr, next: Grammar | None = None):
-        super().__init__(next)
+    def __init__(self, expression: Expr, previous: Grammar | None, next: Grammar | None = None):
+        super().__init__(previous, next)
         self.expression: Expr = expression
 
     def getPrint(self) -> str:
@@ -130,8 +131,8 @@ class Print(Stmt):
             self.next.eval()
     
 class Var(Stmt):
-    def __init__(self, name: Token, initializer: Expr, next: Grammar | None = None) -> None:
-        super().__init__(next)
+    def __init__(self, name: Token, initializer: Expr, previous: Grammar | None, next: Grammar | None = None) -> None:
+        super().__init__(previous, next)
         self.name = name
         self.initializer = initializer
         

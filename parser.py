@@ -113,12 +113,12 @@ class Parser:
     def printStatement(self):
         value: Expr = self.expression()
         self.consume(TokenType.SEMICOLON, "Expect ';' after value.")
-        return Print(value)
+        return Print(value, self.previous)
     
     def expressionStatement(self):
         expr: Expr = self.expression()
         self.consume(TokenType.SEMICOLON, "Expect ';' after value.")
-        return Expression(expr)
+        return Expression(expr, self.previous)
     
     def addStatement(self, statementCreationFunc):
         newNode = statementCreationFunc()
