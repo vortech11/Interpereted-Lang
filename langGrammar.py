@@ -11,6 +11,17 @@ class Grammar:
 class Expr(Grammar):
     ...
 
+class Assign(Expr):
+    def __init__(self, name: Token, value: Expr) -> None:
+        self.name: Token = name
+        self.value: Expr = value
+        
+    def eval(self, environment: Environment):
+        environment.setValue(self.name.lexeme, self.value.eval(environment))
+    
+    def getPrint(self) -> str:
+        return f"{self.name.lexeme} = {self.value.getPrint()}"
+
 class Binary(Expr):
     def __init__(self, left: Expr, operator: Token, right: Expr):
         self.left: Expr = left
@@ -34,6 +45,9 @@ class Binary(Expr):
             case TokenType.MINUS: return left - right
             case TokenType.STAR: return left * right
             case TokenType.SLASH: return left / right
+            
+            case TokenType.AND: return left and right
+            case TokenType.OR: return left or right
             
             case _: return None
         
@@ -96,6 +110,20 @@ class Variable(Expr):
 
 class Stmt(Grammar):
     ...
+
+class Block(Stmt):
+    def __init__(self, statements: list[Stmt]) -> None:
+        self.statements: list[Stmt] = statements
+    
+    def getPrint(self) -> str:
+        output = []
+        for statement in self.statements:
+            output.append(statement.getPrint())
+        return f"{'\n'.join(output)}"
+    
+    def eval(self, environment: Environment):
+        for statement in self.statements:
+            statement.eval(environment)
     
 class Expression(Stmt):
     def __init__(self, expression: Expr):
@@ -127,7 +155,7 @@ class Var(Stmt):
             value = None
         else:
             value = self.initializer.getPrint()
-        return f"{self.name} {value}"
+        return f"var {self.name} {value}"
     
     def eval(self, environment: Environment):
         if self.initializer is None:
@@ -135,6 +163,12 @@ class Var(Stmt):
         else:
             value = self.initializer.eval(environment)
         environment.define(self.name.lexeme, value)
+        
+class IfStmt(Stmt):
+    def __init__(self, condition: Expr, thenBranch: Stmt, elseBranch: Stmt) -> None:
+        self.condition: Expr = condition
+        self.thenBranch: Stmt = thenBranch
+        self.elseBranch: Stmt | None = elseBranch
 
 def printAST(grammar: Grammar):
     print(f"{grammar.getPrint()}")

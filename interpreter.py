@@ -1,5 +1,5 @@
 
-from langGramar import *
+from langGrammar import *
 from environment import Environment
 
 

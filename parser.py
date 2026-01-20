@@ -1,4 +1,4 @@
-from langGramar import *
+from langGrammar import *
 import logging
 logger = logging.getLogger(__name__)
 
@@ -7,14 +7,14 @@ class Parser:
         self.current: int = 0
         self.tokens: list[Token] = tokens
         
-    def getToken(self) -> Token:
-        return self.tokens[self.current]
+    def getToken(self, offset=0) -> Token:
+        return self.tokens[self.current + offset]
         
     def getNextToken(self, offset = 0) -> Token:
         return self.tokens[self.current + 1 + offset]
     
-    def isAtEnd(self) -> bool:
-        return self.getToken().type == TokenType.EOF
+    def isAtEnd(self, offset=0) -> bool:
+        return self.getToken(offset).type == TokenType.EOF
         
     def advance(self):
         self.current += 1
@@ -36,7 +36,48 @@ class Parser:
         return Token(TokenType.NIL, "", None, 0)
     
     def expression(self):
-        return self.equality()
+        return self.assignment()
+    
+    def assignment(self) -> Expr:
+        expr: Expr = self.logical_or()
+        
+        if self.getNextToken().type in [TokenType.EQUAL]:
+            self.advance()
+            equals: Token = self.getToken()
+            self.advance()
+            value = self.assignment()
+            
+            if isinstance(expr, Variable):
+                name = expr.name
+                return Assign(name, value)
+            
+            self.error(equals, "Invalid assignment target.")
+            
+        return expr
+    
+    def logical_or(self) -> Expr:
+        expr: Expr = self.logical_and()
+        
+        if self.getNextToken().type in [TokenType.OR]:
+            self.advance()
+            operator: Token = self.getToken()
+            self.advance()
+            right: Expr = self.logical_and()
+            expr = Binary(expr, operator, right)
+            
+        return expr
+    
+    def logical_and(self) -> Expr:
+        expr: Expr = self.equality()
+        
+        if self.getNextToken().type in [TokenType.AND]:
+            self.advance()
+            operator: Token = self.getToken()
+            self.advance()
+            right: Expr = self.equality()
+            expr = Binary(expr, operator, right)
+            
+        return expr
     
     def equality(self) -> Expr:
         expr: Expr = self.comparison()
@@ -123,12 +164,45 @@ class Parser:
         self.consume(TokenType.SEMICOLON, "Expect ';' after value.")
         return Expression(expr)
     
-    def statement(self):
-        if self.getToken().type == TokenType.PRINT:
+    def ifStatement(self):
+        self.consume(TokenType.LEFT_PAREN, "Expect '(' after if.")
+        condition: Expr = self.expression()
+        self.consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.")
+        
+        thenBranch: Stmt = self.statement()
+        elseBranch: Stmt | None = None
+        if self.getToken().type == TokenType.ELSE:
             self.advance()
-            return self.printStatement()
+            elseBranch = self.statement()
+        
+        return IfStmt(condition, thenBranch, elseBranch)
+        
+    def block(self):
+        statements: list[Stmt] = []
 
-        return self.expressionStatement()
+        while not self.isAtEnd() and not (self.getToken().type in [TokenType.RIGHT_BRACE]):
+            self.advance()
+            statements.append(self.declaration())
+        
+        self.consume(TokenType.RIGHT_BRACE, "Expect '}' after block.")
+        block = Block(statements)
+        return block
+    
+    def statement(self):
+        tokenType = self.getToken().type
+        match tokenType:
+            case TokenType.PRINT:
+                self.advance()
+                return self.printStatement()
+            case TokenType.IF:
+                self.advance()
+                return self.ifStatement()
+            case TokenType.RIGHT_BRACE:
+                self.advance()
+                return self.block()
+            
+            case _:
+                return self.expressionStatement()
     
     def varDeclaration(self):
         name: Token = self.consume(TokenType.IDENTIFIER, "Expect variable name.")

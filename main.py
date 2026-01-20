@@ -5,7 +5,7 @@ import logging
 from scanner import Scanner
 from parser import Parser
 from interpreter import Interpreter
-from langGramar import printAST
+from langGrammar import printAST
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ def parse_file(filePath):
     statementTree = parser.parse()
     
     for statement in statementTree:
-        logger.debug(statement)
+        logger.debug(statement.getPrint())
     
     interpreter = Interpreter(statementTree)
     interpreter.run()
