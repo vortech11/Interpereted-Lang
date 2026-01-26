@@ -27,9 +27,10 @@ class Parser:
             lexeme = f"at '{token.lexeme}'"
         logger.error(f"{token.line} {lexeme} {message}")
     
-    def consume(self, type: TokenType, message):
-        if self.getNextToken().type == type:
-            self.advance()
+    def consume(self, type: TokenType, message, offset=0, advance=True):
+        if self.getNextToken(offset).type == type:
+            if advance: 
+                self.advance()
             return self.getToken()
         
         self.error(self.getNextToken(), message)
@@ -167,7 +168,7 @@ class Parser:
     def ifStatement(self):
         self.consume(TokenType.LEFT_PAREN, "Expect '(' after if.")
         condition: Expr = self.expression()
-        self.consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.")
+        self.consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.", offset=-1)
         
         thenBranch: Stmt = self.statement()
         elseBranch: Stmt | None = None
@@ -180,24 +181,22 @@ class Parser:
     def block(self):
         statements: list[Stmt] = []
 
-        while not self.isAtEnd() and not (self.getToken().type in [TokenType.RIGHT_BRACE]):
-            self.advance()
+        while not (self.getToken().type in [TokenType.RIGHT_BRACE]):
             statements.append(self.declaration())
+            self.advance()
         
-        self.consume(TokenType.RIGHT_BRACE, "Expect '}' after block.")
+        self.consume(TokenType.RIGHT_BRACE, "Expect '}' after block.", -1, advance=False)
         block = Block(statements)
         return block
     
     def statement(self):
-        tokenType = self.getToken().type
-        match tokenType:
+        match self.getToken().type:
             case TokenType.PRINT:
                 self.advance()
                 return self.printStatement()
             case TokenType.IF:
-                self.advance()
                 return self.ifStatement()
-            case TokenType.RIGHT_BRACE:
+            case TokenType.LEFT_BRACE:
                 self.advance()
                 return self.block()
             

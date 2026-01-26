@@ -122,8 +122,9 @@ class Block(Stmt):
         return f"{'\n'.join(output)}"
     
     def eval(self, environment: Environment):
+        subEnv: Environment = Environment(environment)
         for statement in self.statements:
-            statement.eval(environment)
+            statement.eval(subEnv)
     
 class Expression(Stmt):
     def __init__(self, expression: Expr):
@@ -169,6 +170,15 @@ class IfStmt(Stmt):
         self.condition: Expr = condition
         self.thenBranch: Stmt = thenBranch
         self.elseBranch: Stmt | None = elseBranch
+
+    def getPrint(self) -> str:
+        return f"if ({self.condition.getPrint()}) {{{self.thenBranch.getPrint()}}}"
+    
+    def eval(self, environment: Environment):
+        if self.condition.eval(environment) == True:
+            self.thenBranch.eval(environment)
+        elif not self.elseBranch is None:
+            self.elseBranch.eval(environment)
 
 def printAST(grammar: Grammar):
     print(f"{grammar.getPrint()}")
