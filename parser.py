@@ -39,9 +39,7 @@ class Parser:
         logger.error(f"{token.line} {lexeme} {message}")
     
     def consume(self, type: TokenType, message, offset=0, advance=True):
-        if self.getNextToken(offset).type == type:
-            if advance: 
-                self.advance()
+        if self.match([type], advance, offset):
             return self.getToken()
         
         self.error(self.getNextToken(), message)
@@ -139,8 +137,31 @@ class Parser:
             right: Expr = self.unary()
             return Unary(operator, right)
         
-        return self.primary()
+        return self.funcCall()
     
+    def funcCall(self) -> Expr:
+        expr: Expr = self.primary()
+
+        while True:
+            if self.match([TokenType.LEFT_PAREN]):
+                expr = self.finishCall(expr)
+            else:
+                break
+        
+        return expr
+
+    def finishCall(self, callee: Expr) -> Expr:
+        arguments: list[Expr] = []
+        if not self.getNextToken().type == TokenType.RIGHT_PAREN:
+            self.advance()
+            arguments.append(self.expression())
+            while self.match([TokenType.COMMA]):
+                self.advance()
+                arguments.append(self.expression())
+        
+        paren = self.consume(TokenType.RIGHT_PAREN, "Expect ')' after arguments")
+        return Call(callee, paren, arguments)
+
     def primary(self) -> Expr:
         match self.getToken().type:
             case TokenType.FALSE: return Literal(False)

@@ -1,6 +1,8 @@
 import logging
 logger = logging.getLogger(__name__)
 
+import envData
+
 class Environment:
     def __init__(self, parentEnv = None) -> None:
         self.parentEnv: Environment | None = None
@@ -44,3 +46,6 @@ class Environment:
         else:
             logger.error(f"Undefined variable {name}.")
             exit()
+
+    def callFunc(self, name, parameters):
+        ...

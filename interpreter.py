@@ -8,7 +8,9 @@ class Interpreter:
         assert AST is not None
         self.AST: list[Grammar] = AST
         
-        self.environment = Environment()
+        globalEnv = Environment()
+        
+        self.environment = Environment(globalEnv)
                 
     def run(self):
         for statement in self.AST:

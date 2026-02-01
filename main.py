@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def parse_file(filePath):
-    loggingLevel = logging.DEBUG
+    loggingLevel = logging.WARNING
     logging.basicConfig(level=loggingLevel)
     logger.info('Started')
     

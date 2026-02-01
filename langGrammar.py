@@ -1,6 +1,8 @@
 from scanner import Token, TokenType
 from environment import Environment
 
+import envData
+
 class Grammar:
     def getPrint(self) -> str:
         return f"()"
@@ -98,6 +100,23 @@ class Unary(Expr):
     def getPrint(self) -> str:
         return f"{self.operator} ({self.right.getPrint()})"
     
+class Call(Expr):
+    def __init__(self, callee: Expr, paren: Token, arguments: list[Expr]) -> None:
+        self.callee: Expr = callee
+        self.paren: Token = paren
+        self.arguments: list[Expr] = arguments
+    
+    def getPrint(self):
+        listPrintArgs = [arg.getPrint() for arg in self.arguments]
+        printArgs = ", ".join(listPrintArgs)
+        return f"{self.callee.getPrint()} {self.paren} ({printArgs})"
+    
+    def eval(self, environment: Environment):
+        callee = self.callee.eval(environment)
+        arguments = [arg.eval(environment) for arg in self.arguments]
+        
+        environment.callFunc(callee, arguments)
+
 class Variable(Expr):
     def __init__(self, name: Token) -> None:
         self.name = name
