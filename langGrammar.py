@@ -1,7 +1,6 @@
 from scanner import Token, TokenType
 from environment import Environment
 
-import envData
 
 class Grammar:
     def getPrint(self) -> str:
@@ -114,8 +113,8 @@ class Call(Expr):
     def eval(self, environment: Environment):
         callee = self.callee.eval(environment)
         arguments = [arg.eval(environment) for arg in self.arguments]
-        
-        environment.callFunc(callee, arguments)
+
+        return environment.callFunc(self.callee, arguments)
 
 class Variable(Expr):
     def __init__(self, name: Token) -> None:
