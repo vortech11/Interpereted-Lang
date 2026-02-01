@@ -127,7 +127,7 @@ class Scanner:
         self.addToken(TokenType.NUMBER, float(self.source[self.start:self.current+1]))
         
     def identifier(self):
-        while self.getNextChar().isalpha():
+        while self.getNextChar().isalnum():
             self.advance()
         text = self.source[self.start:self.current+1]
         if text in keywords:
