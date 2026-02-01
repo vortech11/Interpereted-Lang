@@ -166,7 +166,7 @@ class Var(Stmt):
         environment.define(self.name.lexeme, value)
         
 class IfStmt(Stmt):
-    def __init__(self, condition: Expr, thenBranch: Stmt, elseBranch: Stmt) -> None:
+    def __init__(self, condition: Expr, thenBranch: Stmt, elseBranch: Stmt | None) -> None:
         self.condition: Expr = condition
         self.thenBranch: Stmt = thenBranch
         self.elseBranch: Stmt | None = elseBranch
@@ -180,5 +180,17 @@ class IfStmt(Stmt):
         elif not self.elseBranch is None:
             self.elseBranch.eval(environment)
 
+class WhileStmt(Stmt):
+    def __init__(self, expression: Expr, statement: Stmt) -> None:
+        self.expression = expression
+        self.statement = statement
+
+    def getPrint(self) -> str:
+        return f"while ({self.expression.getPrint()}) {{{self.statement.getPrint()}}}"
+    
+    def eval(self, environment: Environment):
+        while self.expression.eval(environment):
+            self.statement.eval(environment)
+        
 def printAST(grammar: Grammar):
     print(f"{grammar.getPrint()}")

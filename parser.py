@@ -18,7 +18,18 @@ class Parser:
         
     def advance(self):
         self.current += 1
-        
+    
+    """
+    Checks if the NEXT token is in an input list and ADVANCES to next token if true
+    Optional advance
+    Optional check offset
+    """
+    def match(self, tokenTypes: list[TokenType], advance=True, offset=0):
+        matching = self.getNextToken(offset).type in tokenTypes
+        if matching and advance: 
+            self.advance()
+        return matching
+
     def error(self, token: Token, message: str):
         lexeme = None
         if token.type == TokenType.EOF:
@@ -42,8 +53,7 @@ class Parser:
     def assignment(self) -> Expr:
         expr: Expr = self.logical_or()
         
-        if self.getNextToken().type in [TokenType.EQUAL]:
-            self.advance()
+        if self.match([TokenType.EQUAL]):
             equals: Token = self.getToken()
             self.advance()
             value = self.assignment()
@@ -59,8 +69,7 @@ class Parser:
     def logical_or(self) -> Expr:
         expr: Expr = self.logical_and()
         
-        if self.getNextToken().type in [TokenType.OR]:
-            self.advance()
+        if self.match([TokenType.OR]):
             operator: Token = self.getToken()
             self.advance()
             right: Expr = self.logical_and()
@@ -71,8 +80,7 @@ class Parser:
     def logical_and(self) -> Expr:
         expr: Expr = self.equality()
         
-        if self.getNextToken().type in [TokenType.AND]:
-            self.advance()
+        if self.match([TokenType.AND]):
             operator: Token = self.getToken()
             self.advance()
             right: Expr = self.equality()
@@ -83,8 +91,7 @@ class Parser:
     def equality(self) -> Expr:
         expr: Expr = self.comparison()
         
-        while self.getNextToken().type in [TokenType.BANG_EQUAL, TokenType.EQUAL_EQUAL]:
-            self.advance()
+        while self.match([TokenType.BANG_EQUAL, TokenType.EQUAL_EQUAL]):
             operator: Token = self.getToken()
             self.advance()
             right: Expr = self.comparison()
@@ -95,8 +102,7 @@ class Parser:
     def comparison(self) -> Expr:
         expr: Expr = self.term()
         
-        while self.getNextToken().type in [TokenType.GREATER, TokenType.GREATER_EQUAL, TokenType.LESS, TokenType.LESS_EQUAL]:
-            self.advance()
+        while self.match([TokenType.GREATER, TokenType.GREATER_EQUAL, TokenType.LESS, TokenType.LESS_EQUAL]):
             operator: Token = self.getToken()
             self.advance()
             right: Expr = self.term()
@@ -107,8 +113,7 @@ class Parser:
     def term(self) -> Expr:
         expr: Expr = self.factor()
         
-        while self.getNextToken().type in [TokenType.MINUS, TokenType.PLUS]:
-            self.advance()
+        while self.match([TokenType.MINUS, TokenType.PLUS]):
             operator: Token = self.getToken()
             self.advance()
             right: Expr = self.factor()
@@ -119,8 +124,7 @@ class Parser:
     def factor(self) -> Expr:
         expr: Expr = self.unary()
         
-        while self.getNextToken().type in [TokenType.SLASH, TokenType.STAR]:
-            self.advance()
+        while self.match([TokenType.SLASH, TokenType.STAR]):
             operator: Token = self.getToken()
             self.advance()
             right: Expr = self.unary()
@@ -172,8 +176,7 @@ class Parser:
         
         thenBranch: Stmt = self.statement()
         elseBranch: Stmt | None = None
-        if self.getToken().type == TokenType.ELSE:
-            self.advance()
+        if self.match([TokenType.ELSE], offset=-1):
             elseBranch = self.statement()
         
         return IfStmt(condition, thenBranch, elseBranch)
@@ -189,6 +192,62 @@ class Parser:
         block = Block(statements)
         return block
     
+    def whileStatement(self):
+        self.consume(TokenType.LEFT_PAREN, "Expect '(' after 'while'.")
+        condition: Expr = self.expression()
+        self.consume(TokenType.RIGHT_PAREN, "Expect ')' after condition.", -1)
+        body: Stmt = self.statement()
+
+        return WhileStmt(condition, body)
+    
+    def forStatement(self):
+        self.consume(TokenType.LEFT_PAREN, "Expect '(' after 'for'.")
+        
+        initializer: Stmt | None = None
+        condition: Expr | None = None
+        increment: Expr | None = None
+
+        if self.match([TokenType.SEMICOLON]):
+            pass
+        elif self.match([TokenType.VAR]):
+            initializer = self.varDeclaration()
+        else:
+            initializer = self.expressionStatement()
+
+        if not self.getNextToken().type == TokenType.SEMICOLON:
+            self.advance()
+            condition = self.expression()
+        self.consume(TokenType.SEMICOLON, "Expect ';' after loop condition.")
+
+        if not self.getNextToken().type == TokenType.RIGHT_PAREN:
+            self.advance()
+            increment = self.expression()
+        self.consume(TokenType.RIGHT_PAREN, "Expect ')' after for clauses.")
+
+        self.advance()
+
+        body: Stmt = self.statement()
+
+
+        if not increment is None:
+            body = Block([
+                body,
+                Expression(increment)
+            ])
+        
+        if condition is None: 
+            condition = Literal(True)
+        
+        body = WhileStmt(condition, body)
+
+        if not initializer is None:
+            body = Block([
+                initializer, 
+                body
+            ])
+        
+        return body
+
     def statement(self):
         match self.getToken().type:
             case TokenType.PRINT:
@@ -199,7 +258,10 @@ class Parser:
             case TokenType.LEFT_BRACE:
                 self.advance()
                 return self.block()
-            
+            case TokenType.WHILE:
+                return self.whileStatement()
+            case TokenType.FOR:
+                return self.forStatement()
             case _:
                 return self.expressionStatement()
     
@@ -207,8 +269,7 @@ class Parser:
         name: Token = self.consume(TokenType.IDENTIFIER, "Expect variable name.")
         
         initializer: Expr | None = None
-        if self.getNextToken().type in [TokenType.EQUAL]:
-            self.advance()
+        if self.match([TokenType.EQUAL]):
             self.advance()
             initializer = self.expression()
         
