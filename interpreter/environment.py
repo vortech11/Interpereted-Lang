@@ -1,7 +1,7 @@
 import logging
 logger = logging.getLogger(__name__)
 
-from envData import *
+from interpreter.envData import *
 
 class CallableFactory:
     def __init__(self, parentEnv, params, body) -> None:

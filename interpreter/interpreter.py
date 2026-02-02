@@ -1,8 +1,8 @@
 
 from langGrammar import *
-from environment import Environment
+from interpreter.environment import Environment
 
-from std import *
+from standardLib.std import *
 
 class Interpreter:
     def __init__(self, AST: list[Grammar]) -> None:

@@ -2,9 +2,9 @@ import sys
 from pathlib import Path as Path
 import logging
 
-from scanner import Scanner
-from parser import Parser
-from interpreter import Interpreter
+from parser.scanner import Scanner
+from parser.parser import Parser
+from interpreter.interpreter import Interpreter
 from langGrammar import printAST
 
 logger = logging.getLogger(__name__)

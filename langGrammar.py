@@ -1,7 +1,7 @@
-from scanner import Token, TokenType
-from environment import Environment, CallableFactory
+from parser.scanner import Token, TokenType
+from interpreter.environment import Environment, CallableFactory
 
-from envData import *
+from interpreter.envData import *
 
 class Grammar:
     def getPrint(self) -> str:

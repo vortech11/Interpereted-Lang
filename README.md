@@ -18,6 +18,8 @@ Go to [craftinginterpreters.com]() for an amazing piece of information on progra
     + Optional for loop components
 * Variable instantiation
     + With scope!
+* Functions
+    + With recursion and scope
 
 ## My goals
 

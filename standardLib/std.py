@@ -1,6 +1,6 @@
 from time import ctime
 
-from envData import *
+from interpreter.envData import *
 
 class clock(Callable):
     def __init__(self) -> None:
