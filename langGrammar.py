@@ -1,6 +1,7 @@
 from scanner import Token, TokenType
-from environment import Environment
+from environment import Environment, CallableFactory
 
+from envData import *
 
 class Grammar:
     def getPrint(self) -> str:
@@ -111,7 +112,6 @@ class Call(Expr):
         return f"{self.callee.getPrint()} {self.paren} ({printArgs})"
     
     def eval(self, environment: Environment):
-        callee = self.callee.eval(environment)
         arguments = [arg.eval(environment) for arg in self.arguments]
 
         return environment.callFunc(self.callee, arguments)
@@ -142,7 +142,10 @@ class Block(Stmt):
     def eval(self, environment: Environment):
         subEnv: Environment = Environment(environment)
         for statement in self.statements:
-            statement.eval(subEnv)
+            try:
+                statement.eval(subEnv)
+            except ReturnValue as value:
+                raise value
     
 class Expression(Stmt):
     def __init__(self, expression: Expr):
@@ -163,6 +166,24 @@ class Print(Stmt):
     
     def eval(self, environment: Environment):
         print(self.expression.eval(environment))
+
+class Return(Stmt):
+    def __init__(self, keyword: Token, value: Expr | None):
+        self.keyword: Token = keyword
+        self.value: Expr | None = value
+    
+    def getPrint(self) -> str:
+        value = ""
+        if not self.value is None:
+            value = self.value.getPrint()
+        return f"{self.keyword.lexeme} {value}"
+    
+    def eval(self, environment: Environment):
+        value = None
+        if not self.value is None:
+            value = self.value.eval(environment)
+        
+        raise ReturnValue(value)
     
 class Var(Stmt):
     def __init__(self, name: Token, initializer: Expr | None) -> None:
@@ -182,7 +203,22 @@ class Var(Stmt):
         else:
             value = self.initializer.eval(environment)
         environment.define(self.name.lexeme, value)
-        
+
+class Function(Stmt):
+    def __init__(self, name: Token, params: list[Token], body: Stmt) -> None:
+        self.name: Token = name
+        self.params: list[Token] = params
+        self.body: Stmt = body
+    
+    def getPrint(self) -> str:
+        params = ", ".join([str(param) for param in self.params])
+        return f"func {self.name} ({params}) {{{self.body}}}"
+    
+    def eval(self, environment: Environment):
+        funcFactory = CallableFactory(environment, self.params, self.body)
+
+        environment.define(self.name.lexeme, funcFactory)
+
 class IfStmt(Stmt):
     def __init__(self, condition: Expr, thenBranch: Stmt, elseBranch: Stmt | None) -> None:
         self.condition: Expr = condition

@@ -32,10 +32,10 @@ class TokenType(Enum):
     CLASS = auto()
     ELSE = auto()
     FALSE = auto()
-    FUN = auto()
+    FUNC = auto()
     FOR = auto()
     IF = auto()
-    NIL = auto()
+    NULL = auto()
     OR = auto()
     PRINT = auto()
     RETURN = auto()
@@ -53,9 +53,9 @@ keywords = {
     "else": TokenType.ELSE,
     "false": TokenType.FALSE,
     "for": TokenType.FOR,
-    "fun": TokenType.FUN,
+    "func": TokenType.FUNC,
     "if": TokenType.IF,
-    "nil": TokenType.NIL,
+    "null": TokenType.NULL,
     "or": TokenType.OR,
     "print": TokenType.PRINT,
     "return": TokenType.RETURN,

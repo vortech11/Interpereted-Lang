@@ -3,6 +3,17 @@ logger = logging.getLogger(__name__)
 
 from envData import *
 
+class CallableFactory:
+    def __init__(self, parentEnv, params, body) -> None:
+        self.arity = len(params)
+        self.params = params
+        self.body = body
+        self.parentEnv = parentEnv
+    
+    def constructCallable(self) -> Callable:
+        funcEnv = Environment(self.parentEnv)
+        return Callable(self.arity, funcEnv, self.params, self.body)
+
 class Environment:
     def __init__(self, parentEnv = None) -> None:
         self.parentEnv: Environment | None = None
@@ -49,12 +60,22 @@ class Environment:
 
     def callFunc(self, expr, parameters):
         func = expr.eval(self)
-        if not isinstance(func, Callable):
-            logger.error(f"Function expression '{expr.getPrint()}' is not callable.")
-            exit()
+        if not isinstance(func, CallableFactory):
+            if not isinstance(func, Callable):
+                logger.error(f"Function expression '{expr.getPrint()}' is not callable.")
+                exit()
+            
+            if not len(parameters) == func.arity:
+                logger.error(f"Function expression '{expr.getPrint()}' expected {func.arity} arguments but got {len(parameters)}.")
+                exit()
+
+            return func.call(parameters)
         
         if not len(parameters) == func.arity:
             logger.error(f"Function expression '{expr.getPrint()}' expected {func.arity} arguments but got {len(parameters)}.")
             exit()
+        
+        callableFunc = func.constructCallable()
 
-        return func.call(parameters)
+        return callableFunc.call(parameters)
+

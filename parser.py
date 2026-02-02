@@ -43,7 +43,7 @@ class Parser:
             return self.getToken()
         
         self.error(self.getNextToken(), message)
-        return Token(TokenType.NIL, "", None, 0)
+        return Token(TokenType.NULL, "", None, 0)
     
     def expression(self):
         return self.assignment()
@@ -166,7 +166,7 @@ class Parser:
         match self.getToken().type:
             case TokenType.FALSE: return Literal(False)
             case TokenType.TRUE: return Literal(True)
-            case TokenType.NIL: return Literal(None)
+            case TokenType.NULL: return Literal(None)
             case TokenType.NUMBER | TokenType.STRING: return Literal(self.getToken().literal)
             case TokenType.LEFT_PAREN: 
                 self.advance()
@@ -268,12 +268,24 @@ class Parser:
             ])
         
         return body
+    
+    def returnStatement(self):
+        keyword: Token = self.getToken()
+        value: Expr | None = None
+        if not self.getNextToken().type == TokenType.SEMICOLON:
+            self.advance()
+            value = self.expression()
+        
+        self.consume(TokenType.SEMICOLON, "Expect ';' after return value.")
+        return Return(keyword, value)
 
     def statement(self):
         match self.getToken().type:
             case TokenType.PRINT:
                 self.advance()
                 return self.printStatement()
+            case TokenType.RETURN:
+                return self.returnStatement()
             case TokenType.IF:
                 return self.ifStatement()
             case TokenType.LEFT_BRACE:
@@ -297,12 +309,34 @@ class Parser:
         self.consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.")
         return Var(name, initializer)
     
-    def declaration(self):
-        if self.getToken().type in [TokenType.VAR]:
-            return self.varDeclaration()
+    def funcDeclaration(self, kind: str):
+        name: Token = self.consume(TokenType.IDENTIFIER, f"Expect {kind} name.")
+        self.consume(TokenType.LEFT_PAREN, f"Expect '(' after {kind} name.")
+
         
-        else:
-            return self.statement()
+        parameters: list[Token] = []
+        if not self.getNextToken().type == TokenType.RIGHT_PAREN:
+            parameters.append(self.consume(TokenType.IDENTIFIER, "Expect parameter name."))
+            while self.match([TokenType.COMMA]):
+                parameters.append(self.consume(TokenType.IDENTIFIER, "Expect parameter name."))
+
+        self.consume(TokenType.RIGHT_PAREN, "Expect ')' after parameters.")
+
+        self.consume(TokenType.LEFT_BRACE, "Expect '{' before " + kind + " body.")
+
+        self.advance()
+
+        body: Stmt = self.block()
+        return Function(name, parameters, body)
+    
+    def declaration(self):
+        match self.getToken().type:
+            case TokenType.FUNC:
+                return self.funcDeclaration("function")
+            case TokenType.VAR:
+                return self.varDeclaration()
+            case _:
+                return self.statement()
     
     def parse(self):
         tokenList = []
